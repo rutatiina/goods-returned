@@ -35,7 +35,7 @@ class GoodsReturnedService
     public static function nextNumber()
     {
         $count = GoodsReturned::count();
-        $settings = GoodsReturnedSetting::first();
+        $settings = self::settings();
 
         return $settings->number_prefix . (str_pad(($count + 1), $settings->minimum_number_length, "0", STR_PAD_LEFT)) . $settings->number_postfix;
     }
@@ -133,8 +133,7 @@ class GoodsReturnedService
             //update the status of the txn
             if ($approval)
             {
-                $Txn->status = $data['status'];
-                $Txn->balances_where_updated = 1;
+                $Txn->status = 'approved';
                 $Txn->save();
             }
 
@@ -235,8 +234,7 @@ class GoodsReturnedService
             //update the status of the txn
             if ($approval)
             {
-                $Txn->status = $data['status'];
-                $Txn->balances_where_updated = 1;
+                $Txn->status = 'approved';
                 $Txn->save();
             }
 
@@ -403,7 +401,6 @@ class GoodsReturnedService
             if ($approval)
             {
                 $Txn->status = 'approved';
-                $Txn->balances_where_updated = 1;
                 $Txn->save();
             }
 

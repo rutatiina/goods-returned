@@ -2,26 +2,19 @@
 
 namespace Rutatiina\GoodsReturned\Http\Controllers;
 
-use Rutatiina\GoodsReturned\Models\GoodsReturnedSetting;
-use URL;
 use PDF;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Request as FacadesRequest;
-use Rutatiina\GoodsReturned\Models\GoodsReturned;
-use Rutatiina\Contact\Traits\ContactTrait;
-use Rutatiina\FinancialAccounting\Traits\FinancialAccountingTrait;
+use Illuminate\Support\Facades\Auth;
 use Yajra\DataTables\Facades\DataTables;
-
-use Rutatiina\GoodsReturned\Classes\Store as TxnStore;
-use Rutatiina\GoodsReturned\Classes\Approve as TxnApprove;
-use Rutatiina\GoodsReturned\Classes\Read as TxnRead;
-use Rutatiina\GoodsReturned\Classes\Copy as TxnCopy;
-use Rutatiina\GoodsReturned\Classes\Number as TxnNumber;
+use Rutatiina\Contact\Traits\ContactTrait;
+use Rutatiina\GoodsReturned\Models\GoodsReturned;
 use Rutatiina\GoodsReturned\Traits\Item as TxnItem;
-use Rutatiina\GoodsReturned\Classes\Edit as TxnEdit;
-use Rutatiina\GoodsReturned\Classes\Update as TxnUpdate;
+
+use Illuminate\Support\Facades\Request as FacadesRequest;
+use Rutatiina\GoodsReturned\Services\GoodsReturnedService;
+use Rutatiina\FinancialAccounting\Traits\FinancialAccountingTrait;
 
 class GoodsReturnedController extends Controller
 {
@@ -59,7 +52,7 @@ class GoodsReturnedController extends Controller
     private function nextNumber()
     {
         $txn = GoodsReturned::latest()->first();
-        $settings = GoodsReturnedSetting::first();
+        $settings = GoodsReturnedService::settings();
 
         return $settings->number_prefix.(str_pad((optional($txn)->number+1), $settings->minimum_number_length, "0", STR_PAD_LEFT)).$settings->number_postfix;
     }
@@ -105,23 +98,21 @@ class GoodsReturnedController extends Controller
 
     public function store(Request $request)
     {
-        $TxnStore = new TxnStore();
-        $TxnStore->txnEntreeSlug = $this->txnEntreeSlug;
-        $TxnStore->txnInsertData = $request->all();
-        $insert = $TxnStore->run();
+        $storeService = GoodsReturnedService::store($request);
 
-        if ($insert == false) {
+        if ($storeService == false)
+        {
             return [
-                'status'    => false,
-                'messages'  => $TxnStore->errors
+                'status' => false,
+                'messages' => GoodsReturnedService::$errors
             ];
         }
 
         return [
-            'status'    => true,
-            'messages'  => ['Goods Returned Note saved'],
-            'number'    => 0,
-            'callback'  => URL::route('goods-returned.show', [$insert->id], false)
+            'status' => true,
+            'messages' => ['Goods returned note saved'],
+            'number' => 0,
+            'callback' => URL::route('goods-returned.show', [$storeService->id], false)
         ];
     }
 
@@ -132,10 +123,14 @@ class GoodsReturnedController extends Controller
             return view('ui.limitless::layout_2-ltr-default.appVue');
         }
 
-        if (FacadesRequest::wantsJson()) {
-            $TxnRead = new TxnRead();
-            return $TxnRead->run($id);
-        }
+        $txn = GoodsReturned::findOrFail($id);
+        $txn->load('contact', 'items');
+        $txn->setAppends([
+            'number_string',
+            'total_in_words',
+        ]);
+
+        return $txn->toArray();
     }
 
     public function edit($id)
@@ -146,35 +141,27 @@ class GoodsReturnedController extends Controller
             return view('ui.limitless::layout_2-ltr-default.appVue');
         }
 
-        $TxnEdit = new TxnEdit();
-        $txnAttributes = $TxnEdit->run($id);
+        $txnAttributes = GoodsReturnedService::edit($id);
 
-        $data = [
+        return [
             'pageTitle' => 'Edit Goods returned note', #required
             'pageAction' => 'Edit', #required
             'txnUrlStore' => '/goods-returned/' . $id, #required
             'txnAttributes' => $txnAttributes, #required
         ];
-
-        if (FacadesRequest::wantsJson())
-        {
-            return $data;
-        }
     }
 
     public function update(Request $request)
     {
         //print_r($request->all()); exit;
 
-        $TxnStore = new TxnUpdate();
-        $TxnStore->txnInsertData = $request->all();
-        $insert = $TxnStore->run();
+        $storeService = GoodsReturnedService::update($request);
 
-        if ($insert == false)
+        if ($storeService == false)
         {
             return [
                 'status' => false,
-                'messages' => $TxnStore->errors
+                'messages' => GoodsReturnedService::$errors
             ];
         }
 
@@ -182,67 +169,67 @@ class GoodsReturnedController extends Controller
             'status' => true,
             'messages' => ['Goods returned note updated'],
             'number' => 0,
-            'callback' => URL::route('goods-returned.show', [$insert->id], false)
+            'callback' => URL::route('goods-returned.show', [$storeService->id], false)
         ];
     }
 
-    public function destroy()
-	{}
+    public function destroy($id)
+	{
+        $destroy = GoodsReturnedService::destroy($id);
+
+        if ($destroy)
+        {
+            return [
+                'status' => true,
+                'messages' => ['Goods returned note deleted'],
+                'callback' => URL::route('goods-returned.index', [], false)
+            ];
+        }
+        else
+        {
+            return [
+                'status' => false,
+                'messages' => GoodsReturnedService::$errors
+            ];
+        }
+    }
 
 	#-----------------------------------------------------------------------------------
 
     public function approve($id)
     {
-        $TxnApprove = new TxnApprove();
-        $approve = $TxnApprove->run($id);
+        $approve = GoodsReturnedService::approve($id);
 
-        if ($approve == false) {
+        if ($approve == false)
+        {
             return [
-                'status'    => false,
-                'messages'   => $TxnApprove->errors
+                'status' => false,
+                'messages' => GoodsReturnedService::$errors
             ];
         }
 
         return [
-            'status'    => true,
-            'messages'   => ['Goods Returned Note approved'],
+            'status' => true,
+            'messages' => ['Goods returned note Approved'],
         ];
-
     }
 
     public function copy($id)
     {
         //load the vue version of the app
-        if (!FacadesRequest::wantsJson()) {
+        if (!FacadesRequest::wantsJson())
+        {
             return view('ui.limitless::layout_2-ltr-default.appVue');
         }
 
-        $TxnCopy = new TxnCopy();
-        $txnAttributes = $TxnCopy->run($id);
+        $txnAttributes = GoodsReturnedService::copy($id);
 
-        $TxnNumber = new TxnNumber();
-        $txnAttributes['number'] = $TxnNumber->run($this->txnEntreeSlug);
-
-        $data = [
-            'pageTitle' => 'Copy Goods Returned Note', #required
+        return [
+            'pageTitle' => 'Copy Goods delivered note', #required
             'pageAction' => 'Copy', #required
             'txnUrlStore' => '/goods-returned', #required
             'txnAttributes' => $txnAttributes, #required
         ];
-
-        if (FacadesRequest::wantsJson()) {
-            return $data;
-        }
-    }
-
-    public function datatables()
-	{
-        $txns = Transaction::setRoute('show', route('accounting.inventory.goods-returned.show', '_id_'))
-			->setRoute('edit', route('accounting.inventory.goods-returned.edit', '_id_'))
-			->paginate(false)
-			->findByEntree($this->txnEntreeSlug);
-
-        return Datatables::of($txns)->make(true);
     }
 
     public function exportToExcel(Request $request)
