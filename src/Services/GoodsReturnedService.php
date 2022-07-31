@@ -42,15 +42,12 @@ class GoodsReturnedService
 
     public static function edit($id)
     {
-        $taxes = Tax::all()->keyBy('code');
-
         $txn = GoodsReturned::findOrFail($id);
-        $txn->load('contact', 'items.taxes');
-        $txn->setAppends(['taxes']);
+        $txn->load('contact', 'items');
 
         $attributes = $txn->toArray();
 
-        //print_r($attributes); exit;
+        print_r($attributes); exit;
 
         $attributes['_method'] = 'PATCH';
 
@@ -73,11 +70,6 @@ class GoodsReturnedService
             $attributes['items'][$key]['selectedItem'] = $selectedItem; #required
             $attributes['items'][$key]['selectedTaxes'] = []; #required
             $attributes['items'][$key]['displayTotal'] = 0; #required
-
-            foreach ($item['taxes'] as $itemTax)
-            {
-                $attributes['items'][$key]['selectedTaxes'][] = $taxes[$itemTax['tax_code']];
-            }
 
             $attributes['items'][$key]['rate'] = floatval($item['rate']);
             $attributes['items'][$key]['quantity'] = floatval($item['quantity']);
@@ -113,10 +105,8 @@ class GoodsReturnedService
             $Txn->contact_name = $data['contact_name'];
             $Txn->contact_address = $data['contact_address'];
             $Txn->reference = $data['reference'];
-            $Txn->total = $data['total'];
             $Txn->branch_id = $data['branch_id'];
             $Txn->store_id = $data['store_id'];
-            $Txn->status = $data['status'];
 
             $Txn->save();
 
@@ -192,16 +182,11 @@ class GoodsReturnedService
             }
 
             //Delete affected relations
-            $Txn->ledgers()->delete();
             $Txn->items()->delete();
-            $Txn->item_taxes()->delete();
             $Txn->comments()->delete();
 
             //reverse the account balances
             AccountBalanceUpdateService::doubleEntry($Txn->toArray(), true);
-
-            //reverse the contact balances
-            ContactBalanceUpdateService::doubleEntry($Txn->toArray(), true);
 
             $Txn->tenant_id = $data['tenant_id'];
             $Txn->created_by = Auth::id();
@@ -212,12 +197,9 @@ class GoodsReturnedService
             $Txn->contact_name = $data['contact_name'];
             $Txn->contact_address = $data['contact_address'];
             $Txn->reference = $data['reference'];
-            $Txn->total = $data['total'];
             $Txn->branch_id = $data['branch_id'];
             $Txn->store_id = $data['store_id'];
-            $Txn->due_date = $data['due_date'];
             $Txn->contact_notes = $data['contact_notes'];
-            $Txn->status = $data['status'];
 
             $Txn->save();
 
@@ -284,9 +266,7 @@ class GoodsReturnedService
             }
 
             //Delete affected relations
-            $Txn->ledgers()->delete();
             $Txn->items()->delete();
-            $Txn->item_taxes()->delete();
             $Txn->comments()->delete();
 
             //reverse the account balances
