@@ -117,11 +117,8 @@ class GoodsReturnedService
             //Save the items >> $data['items']
             GoodsReturnedItemService::store($data);
 
-            //check status and update financial account and contact balances accordingly
-            $approval = GoodsReturnedApprovalService::run($data);
-
             //update the status of the txn
-            if ($approval)
+            if (GoodsReturnedInventoryService::update($data))
             {
                 $Txn->status = 'approved';
                 $Txn->save();
@@ -181,12 +178,11 @@ class GoodsReturnedService
                 return false;
             }
 
+            GoodsReturnedInventoryService::reverse($Txn->toArray());
+
             //Delete affected relations
             $Txn->items()->delete();
             $Txn->comments()->delete();
-
-            //reverse the account balances
-            AccountBalanceUpdateService::doubleEntry($Txn->toArray(), true);
 
             $Txn->tenant_id = $data['tenant_id'];
             $Txn->created_by = Auth::id();
@@ -210,11 +206,8 @@ class GoodsReturnedService
             //Save the items >> $data['items']
             GoodsReturnedItemService::store($data);
 
-            //check status and update financial account and contact balances accordingly
-            $approval = GoodsReturnedApprovalService::run($data);
-
             //update the status of the txn
-            if ($approval)
+            if (GoodsReturnedInventoryService::update($data))
             {
                 $Txn->status = 'approved';
                 $Txn->save();
@@ -257,7 +250,7 @@ class GoodsReturnedService
 
         try
         {
-            $Txn = GoodsReturned::with('items', 'ledgers')->findOrFail($id);
+            $Txn = GoodsReturned::with('items')->findOrFail($id);
 
             if ($Txn->status == 'approved')
             {
@@ -265,15 +258,11 @@ class GoodsReturnedService
                 return false;
             }
 
+            GoodsReturnedInventoryService::reverse($Txn->toArray());
+
             //Delete affected relations
             $Txn->items()->delete();
             $Txn->comments()->delete();
-
-            //reverse the account balances
-            AccountBalanceUpdateService::doubleEntry($Txn, true);
-
-            //reverse the contact balances
-            ContactBalanceUpdateService::doubleEntry($Txn, true);
 
             $Txn->delete();
 
@@ -375,10 +364,9 @@ class GoodsReturnedService
         try
         {
             $data['status'] = 'approved';
-            $approval = GoodsReturnedApprovalService::run($data);
 
             //update the status of the txn
-            if ($approval)
+            if (GoodsReturnedInventoryService::update($data))
             {
                 $Txn->status = 'approved';
                 $Txn->save();
