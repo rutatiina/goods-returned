@@ -81,6 +81,8 @@ class GoodsReturnedInventoryService
         //Update the inventory summary
         foreach ($data['items'] as &$item)
         {
+            if ($item['inventory_tracking'] == 0) continue;
+
             $inventory = self::record($data, $item);
 
             //increase the 
@@ -104,6 +106,8 @@ class GoodsReturnedInventoryService
         //Update the inventory summary
         foreach ($data['items'] as &$item)
         {
+            if ($item['inventory_tracking'] == 0) continue;
+            
             $inventory = self::record($data, $item);
 
             //increase the 
