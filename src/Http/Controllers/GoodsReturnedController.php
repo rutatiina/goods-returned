@@ -27,10 +27,10 @@ class GoodsReturnedController extends Controller
 
     public function __construct()
     {
-        $this->middleware('permission:goods-returned.view');
-		$this->middleware('permission:goods-returned.create', ['only' => ['create','store']]);
-		$this->middleware('permission:goods-returned.update', ['only' => ['edit','update']]);
-		$this->middleware('permission:goods-returned.delete', ['only' => ['destroy']]);
+        // $this->middleware('permission:goods-returned.view');
+		// $this->middleware('permission:goods-returned.create', ['only' => ['create','store']]);
+		// $this->middleware('permission:goods-returned.update', ['only' => ['edit','update']]);
+		// $this->middleware('permission:goods-returned.delete', ['only' => ['destroy']]);
     }
 
     public function index(Request $request)
