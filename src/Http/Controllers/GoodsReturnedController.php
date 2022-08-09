@@ -273,4 +273,31 @@ class GoodsReturnedController extends Controller
         return $export;
     }
 
+    public function routes()
+    {
+        return [
+            'delete' => route('goods-returned.delete'),
+            'approve' => route('goods-returned.approve'),
+            'cancel' => route('goods-returned.cancel'),
+        ];
+    }
+
+    public function delete(Request $request)
+    {
+        if (GoodsReturnedService::destroyMany($request->ids))
+        {
+            return [
+                'status' => true,
+                'messages' => [count($request->ids) . ' Goods returned note(s) deleted.'],
+            ];
+        }
+        else
+        {
+            return [
+                'status' => false,
+                'messages' => GoodsReturnedService::$errors
+            ];
+        }
+    }
+
 }
