@@ -7,7 +7,7 @@ Route::group(['middleware' => ['web', 'auth', 'tenant', 'service.accounting']], 
         Route::post('routes', 'Rutatiina\GoodsReturned\Http\Controllers\GoodsReturnedController@routes')->name('goods-returned.routes');
         //Route::get('summary', 'Rutatiina\GoodsReturned\Http\Controllers\GoodsReturnedController@summary');
         Route::post('export-to-excel', 'Rutatiina\GoodsReturned\Http\Controllers\GoodsReturnedController@exportToExcel');
-        Route::post('approve', 'Rutatiina\GoodsReturned\Http\Controllers\GoodsReturnedController@approve')->name('goods-returned.approve');
+        Route::post('{id}/approve', 'Rutatiina\GoodsReturned\Http\Controllers\GoodsReturnedController@approve')->name('goods-returned.approve');
         //Route::post('contact-estimates', 'Rutatiina\GoodsReturned\Http\Controllers\Sales\ReceiptController@estimates');
         Route::get('{id}/copy', 'Rutatiina\GoodsReturned\Http\Controllers\GoodsReturnedController@copy');
         Route::delete('delete', 'Rutatiina\GoodsReturned\Http\Controllers\GoodsReturnedController@delete')->name('goods-returned.delete');

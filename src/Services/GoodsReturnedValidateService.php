@@ -27,7 +27,6 @@ class GoodsReturnedValidateService
         $rules = [
             'contact_id' => 'numeric|nullable',
             'date' => 'required|date',
-            'base_currency' => 'required',
             'due_date' => 'date|nullable',
             'salesperson_contact_id' => 'numeric|nullable',
             'memo' => 'string|nullable',

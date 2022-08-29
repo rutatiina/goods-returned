@@ -60,7 +60,7 @@ class GoodsReturnedService
                 'id' => $item['item_id'],
                 'name' => $item['name'],
                 'description' => $item['description'],
-                'rate' => $item['rate'],
+                'rate' => 0,
                 'tax_method' => 'inclusive',
                 'account_type' => null,
             ];
@@ -69,10 +69,10 @@ class GoodsReturnedService
             $attributes['items'][$key]['selectedTaxes'] = []; #required
             $attributes['items'][$key]['displayTotal'] = 0; #required
 
-            $attributes['items'][$key]['rate'] = floatval($item['rate']);
+            $attributes['items'][$key]['rate'] = 0;
             $attributes['items'][$key]['quantity'] = floatval($item['quantity']);
-            $attributes['items'][$key]['total'] = floatval($item['total']);
-            $attributes['items'][$key]['displayTotal'] = $item['total']; #required
+            $attributes['items'][$key]['total'] = 0;
+            $attributes['items'][$key]['displayTotal'] = 0; #required
         };
 
         return $attributes;
@@ -105,6 +105,7 @@ class GoodsReturnedService
             $Txn->reference = $data['reference'];
             $Txn->branch_id = $data['branch_id'];
             $Txn->store_id = $data['store_id'];
+            $Txn->status = $data['status'];
 
             $Txn->save();
 
@@ -116,11 +117,8 @@ class GoodsReturnedService
             GoodsReturnedItemService::store($data);
 
             //update the status of the txn
-            if (GoodsReturnedInventoryService::update($data))
-            {
-                $Txn->status = 'approved';
-                $Txn->save();
-            }
+            $Txn->status = (GoodsReturnedInventoryService::update($data)) ? 'approved' : 'draft';
+            $Txn->save();
 
             DB::connection('tenant')->commit();
 
@@ -172,15 +170,9 @@ class GoodsReturnedService
 
         try
         {
-            $originalTxn = GoodsReturned::with('items', 'ledgers')->findOrFail($data['id']);
+            $originalTxn = GoodsReturned::with('items')->findOrFail($data['id']);
 
             $Txn = $originalTxn->duplicate();
-
-            if ($Txn->status == 'approved')
-            {
-                self::$errors[] = 'Approved Transaction cannot be not be edited';
-                return false;
-            }
 
             GoodsReturnedInventoryService::reverse($Txn->toArray());
 
@@ -357,7 +349,7 @@ class GoodsReturnedService
 
     public static function approve($id)
     {
-        $Txn = GoodsReturned::with(['ledgers'])->findOrFail($id);
+        $Txn = GoodsReturned::with(['items'])->findOrFail($id);
 
         if (!in_array($Txn->status, config('financial-accounting.approvable_status')))
         {
@@ -373,20 +365,15 @@ class GoodsReturnedService
         try
         {
             $data['status'] = 'approved';
-
-            //update the status of the txn
-            if (GoodsReturnedInventoryService::update($data))
-            {
-                $Txn->status = 'approved';
-                $Txn->save();
-            }
+            $Txn->status = (GoodsReturnedInventoryService::update($data)) ? 'approved' : 'draft';
+            $Txn->save();
 
             DB::connection('tenant')->commit();
 
             return true;
 
         }
-        catch (\Exception $e)
+        catch (\Throwable $e)
         {
             DB::connection('tenant')->rollBack();
             //print_r($e); exit;

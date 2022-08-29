@@ -2,12 +2,13 @@
 
 namespace Rutatiina\GoodsReturned\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Rutatiina\Tenant\Scopes\TenantIdScope;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Bkwld\Cloner\Cloneable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use Rutatiina\Tenant\Scopes\TenantIdScope;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Rutatiina\Inventory\Scopes\StatusEditedScope;
 
 class GoodsReturned extends Model
 {
@@ -60,10 +61,7 @@ class GoodsReturned extends Model
         parent::boot();
 
         static::addGlobalScope(new TenantIdScope);
-
-        static::addGlobalScope('ancient', function (Builder $builder) {
-            $builder->whereNotIn('status', ['edited']);
-        });
+        static::addGlobalScope(new StatusEditedScope);
 
         self::deleting(function($txn) { // before delete() method call this
              $txn->items()->each(function($row) {

@@ -198,20 +198,20 @@ class GoodsReturnedController extends Controller
 
     public function approve($id)
     {
-        $approve = GoodsReturnedService::approve($id);
-
-        if ($approve == false)
+        if(GoodsReturnedService::approve($id))
+        {
+            return [
+                'status' => true,
+                'messages' => ['Goods returned note Approved'],
+            ];
+        }
+        else
         {
             return [
                 'status' => false,
                 'messages' => GoodsReturnedService::$errors
             ];
         }
-
-        return [
-            'status' => true,
-            'messages' => ['Goods returned note Approved'],
-        ];
     }
 
     public function copy($id)
@@ -277,7 +277,6 @@ class GoodsReturnedController extends Controller
     {
         return [
             'delete' => route('goods-returned.delete'),
-            'approve' => route('goods-returned.approve'),
             'cancel' => route('goods-returned.cancel'),
         ];
     }
