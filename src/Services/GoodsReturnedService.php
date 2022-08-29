@@ -47,12 +47,10 @@ class GoodsReturnedService
 
         $attributes = $txn->toArray();
 
-        print_r($attributes); exit;
+        // print_r($attributes); exit;
 
         $attributes['_method'] = 'PATCH';
-
-        $attributes['contact']['currency'] = $attributes['contact']['currency_and_exchange_rate'];
-        $attributes['contact']['currencies'] = $attributes['contact']['currencies_and_exchange_rates'];
+        $attributes['contact'] = ($attributes['contact']) ? $attributes['contact'] : json_decode('{}');
 
         $attributes['taxes'] = json_decode('{}');
 
@@ -174,7 +172,9 @@ class GoodsReturnedService
 
         try
         {
-            $Txn = GoodsReturned::with('items', 'ledgers')->findOrFail($data['id']);
+            $originalTxn = GoodsReturned::with('items', 'ledgers')->findOrFail($data['id']);
+
+            $Txn = $originalTxn->duplicate();
 
             if ($Txn->status == 'approved')
             {
@@ -188,6 +188,7 @@ class GoodsReturnedService
             $Txn->items()->delete();
             $Txn->comments()->delete();
 
+            $Txn->parent_id = $originalTxn->id;
             $Txn->tenant_id = $data['tenant_id'];
             $Txn->created_by = Auth::id();
             $Txn->document_name = $data['document_name'];
@@ -216,6 +217,8 @@ class GoodsReturnedService
                 $Txn->status = 'approved';
                 $Txn->save();
             }
+
+            $originalTxn->update(['status' => 'edited']);
 
             DB::connection('tenant')->commit();
 
@@ -256,18 +259,11 @@ class GoodsReturnedService
         {
             $Txn = GoodsReturned::with('items')->findOrFail($id);
 
-            if ($Txn->status == 'approved')
-            {
-                self::$errors[] = 'Approved Transaction cannot be not be deleted';
-                return false;
-            }
-
             GoodsReturnedInventoryService::reverse($Txn->toArray());
 
             //Delete affected relations
             $Txn->items()->delete();
             $Txn->comments()->delete();
-
             $Txn->delete();
 
             DB::connection('tenant')->commit();

@@ -5,10 +5,15 @@ namespace Rutatiina\GoodsReturned\Models;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Rutatiina\Tenant\Scopes\TenantIdScope;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Bkwld\Cloner\Cloneable;
 
 class GoodsReturned extends Model
 {
+    use SoftDeletes;
     use LogsActivity;
+    use Cloneable;
 
     protected static $logName = 'Txn';
     protected static $logFillable = true;
@@ -24,6 +29,12 @@ class GoodsReturned extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'contact_id' => 'integer',
+    ];
+
+    protected $cloneable_relations = ['items', 'comments'];
+
     /**
      * The attributes that should be hidden for arrays.
      *
@@ -33,10 +44,11 @@ class GoodsReturned extends Model
         'created_at',
         'updated_at',
     ];
+    
     protected $appends = [
-    'number_string',
-    'total_in_words',
-];
+        'number_string',
+        'total_in_words',
+    ];
 
     /**
      * The "booting" method of the model.
@@ -48,6 +60,10 @@ class GoodsReturned extends Model
         parent::boot();
 
         static::addGlobalScope(new TenantIdScope);
+
+        static::addGlobalScope('ancient', function (Builder $builder) {
+            $builder->whereNotIn('status', ['edited']);
+        });
 
         self::deleting(function($txn) { // before delete() method call this
              $txn->items()->each(function($row) {
