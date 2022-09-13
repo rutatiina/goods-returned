@@ -95,9 +95,18 @@ class GoodsReturnedInventoryService
             $inventory = self::record($data, $item);
 
             //increase the 
-            $inventory->decrement('units_issued', $item['units']);
-            $inventory->increment('units_returned', $item['units']);
-            $inventory->increment('units_available', $item['units']);
+            if ($data['type'] == 'sales-return')
+            {
+                $inventory->decrement('units_delivered', $item['units']);
+                $inventory->increment('units_returned', $item['units']);
+                $inventory->increment('units_available', $item['units']);
+            }
+            else
+            {
+                $inventory->decrement('units_issued', $item['units']);
+                $inventory->increment('units_returned', $item['units']);
+                $inventory->increment('units_available', $item['units']);
+            }
 
         }
 
@@ -128,9 +137,18 @@ class GoodsReturnedInventoryService
             $inventory = self::record($data, $item);
 
             //increase the 
-            $inventory->increment('units_issued', $item['units']);
-            $inventory->decrement('units_returned', $item['units']);
-            $inventory->decrement('units_available', $item['units']);
+            if ($data['type'] == 'sales-return')
+            {
+                $inventory->increment('units_delivered', $item['units']);
+                $inventory->decrement('units_returned', $item['units']);
+                $inventory->decrement('units_available', $item['units']);
+            }
+            else
+            {
+                $inventory->increment('units_issued', $item['units']);
+                $inventory->decrement('units_returned', $item['units']);
+                $inventory->decrement('units_available', $item['units']);
+            }
 
         }
 

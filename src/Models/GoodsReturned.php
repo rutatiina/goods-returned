@@ -91,12 +91,12 @@ class GoodsReturned extends Model
             if ($row->Default == '[]') {
                 $attributes[$row->Field] = [];
             } else {
-                $attributes[$row->Field] = ''; //$row->Default; //null affects laravel validation
+                $attributes[$row->Field] = $row->Default ?? ''; //$row->Default; //null affects laravel validation
             }
         }
 
         //add the relationships
-        $attributes['type'] = [];
+        //$attributes['type'] = 'goods-issued-return';
         $attributes['debit_account'] = [];
         $attributes['credit_account'] = [];
         $attributes['items'] = [];

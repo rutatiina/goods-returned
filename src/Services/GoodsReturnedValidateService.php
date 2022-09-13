@@ -79,6 +79,7 @@ class GoodsReturnedValidateService
         $data['contact_notes'] = $requestInstance->input('contact_notes', null);
         $data['status'] = strtolower($requestInstance->input('status', null));
         $data['balances_where_updated'] = 0;
+        $data['type'] = strtolower($requestInstance->type); //type of return sales-return OR goods-issued-return
 
         //Formulate the DB ready items array
         $data['items'] = [];
@@ -98,7 +99,7 @@ class GoodsReturnedValidateService
                 'units' => ($item['quantity']*$itemModel['units']), //$requestInstance->input('items.'.$key.'.units', null),
                 'batch' => $requestInstance->input('items.'.$key.'.batch', null),
                 'expiry' => $requestInstance->input('items.'.$key.'.expiry', null),
-                'inventory_tracking' => $itemModel->inventory_tracking,
+                'inventory_tracking' => ($itemModel->inventory_tracking ?? 0),
             ];
 
         }
