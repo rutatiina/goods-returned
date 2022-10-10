@@ -1,4 +1,5 @@
 <?php
+use Illuminate\Support\Facades\Route;
 
 Route::group(['middleware' => ['web', 'auth', 'tenant', 'service.accounting']], function() {
 
@@ -11,7 +12,7 @@ Route::group(['middleware' => ['web', 'auth', 'tenant', 'service.accounting']], 
         //Route::post('contact-estimates', 'Rutatiina\GoodsReturned\Http\Controllers\Sales\ReceiptController@estimates');
         Route::get('{id}/copy', 'Rutatiina\GoodsReturned\Http\Controllers\GoodsReturnedController@copy');
         Route::delete('delete', 'Rutatiina\GoodsReturned\Http\Controllers\GoodsReturnedController@delete')->name('goods-returned.delete');
-        Route::delete('cancel', 'Rutatiina\GoodsReturned\Http\Controllers\GoodsReturnedController@cancel')->name('goods-returned.cancel');
+        Route::patch('cancel', 'Rutatiina\GoodsReturned\Http\Controllers\GoodsReturnedController@cancel')->name('goods-returned.cancel');
 
     });
 
