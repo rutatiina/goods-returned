@@ -288,11 +288,63 @@ class GoodsReturnedService
         }
     }
 
+    public static function cancel($id)
+    {
+        //start database transaction
+        DB::connection('tenant')->beginTransaction();
+
+        try
+        {
+            $Txn = GoodsReturned::with('items')->findOrFail($id);
+
+            GoodsReturnedInventoryService::reverse($Txn->toArray());
+
+            $Txn->canceled = 1;
+            $Txn->save();
+
+            DB::connection('tenant')->commit();
+
+            return true;
+
+        }
+        catch (\Throwable $e)
+        {
+            DB::connection('tenant')->rollBack();
+
+            Log::critical('Fatal Internal Error: Failed to cancel GoodsReturned from database');
+            Log::critical($e);
+
+            //print_r($e); exit;
+            if (App::environment('local'))
+            {
+                self::$errors[] = 'Error: Failed to cancel GoodsReturned from database.';
+                self::$errors[] = 'File: ' . $e->getFile();
+                self::$errors[] = 'Line: ' . $e->getLine();
+                self::$errors[] = 'Message: ' . $e->getMessage();
+            }
+            else
+            {
+                self::$errors[] = 'Fatal Internal Error: Failed to cancel GoodsReturned from database. Please contact Admin';
+            }
+
+            return false;
+        }
+    }
+
     public static function destroyMany($ids)
     {
         foreach($ids as $id)
         {
             if(!self::destroy($id)) return false;
+        }
+        return true;
+    }
+
+    public static function cancelMany($ids)
+    {
+        foreach($ids as $id)
+        {
+            if(!self::cancel($id)) return false;
         }
         return true;
     }
