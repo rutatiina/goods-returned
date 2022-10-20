@@ -27,7 +27,7 @@ class GoodsReturnedService
             'tenant_id' => session('tenant_id'),
             'document_name' => 'Goods Returned Note',
             'document_type' => 'inventory',
-            // 'debit_financial_account_code' => 130500, //Other Inventory
+            // 'debit_financial_account_code' => 130500, //Inventory
             // 'credit_financial_account_code' => 66, //sales person inventory
         ]);
     }
